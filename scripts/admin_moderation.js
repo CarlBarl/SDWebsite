@@ -219,6 +219,9 @@ function createBrandModerationItem(brand) {
         minute: '2-digit'
     });
     
+    // Check if brand has a logo
+    const hasLogo = brand.pending_logo_url && brand.pending_logo_url.trim() !== '';
+    
     item.innerHTML = `
         <div class="brand-info">
             <div class="brand-header">
@@ -260,8 +263,8 @@ function createBrandModerationItem(brand) {
         </div>
         
         <div class="logo-section">
-            <div class="logo-container">
-                ${brand.pending_logo_url ? `
+            <div class="logo-container ${!hasLogo ? 'no-logo' : ''}">
+                ${hasLogo ? `
                     <img src="${escapeHtml(brand.pending_logo_url)}" 
                          alt="Pending logo for ${escapeHtml(brand.name)}" 
                          class="pending-logo"
@@ -269,23 +272,24 @@ function createBrandModerationItem(brand) {
                 ` : `
                     <div class="no-logo-placeholder">
                         <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
                         </svg>
-                        <span>No logo uploaded</span>
+                        <span class="no-logo-text">No logo uploaded</span>
+                        <span class="no-logo-hint">Brand can still be approved</span>
                     </div>
                 `}
             </div>
         </div>
         
         <div class="moderation-actions">
-            <button class="approve-btn" onclick="handleApprove('${brand.id}')" title="Approve this brand logo">
+            <button class="approve-btn ${!hasLogo ? 'approve-no-logo' : ''}" onclick="handleApprove('${brand.id}')" title="${hasLogo ? 'Approve this brand logo' : 'Approve this brand (no logo will be set)'}">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                 </svg>
-                Approve
+                ${hasLogo ? 'Approve' : 'Approve (No Logo)'}
             </button>
             
-            <button class="reject-btn" onclick="handleReject('${brand.id}')" title="Reject this brand logo">
+            <button class="reject-btn" onclick="handleReject('${brand.id}')" title="Reject this brand submission">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                     <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
                 </svg>
@@ -300,6 +304,23 @@ function createBrandModerationItem(brand) {
 // Replace the placeholder handleApprove function
 async function handleApprove(brandId) {
     console.log('Approving brand:', brandId);
+    
+    // Find the brand data to check if it has a logo
+    const brandData = pendingBrands.find(brand => brand.id === brandId);
+    const hasLogo = brandData && brandData.pending_logo_url && brandData.pending_logo_url.trim() !== '';
+    
+    // Show confirmation for brands without logos
+    if (!hasLogo) {
+        const confirmApproval = confirm(
+            `This brand "${brandData?.name || brandId}" does not have a logo uploaded. ` +
+            'Approving will create the brand without a logo. Do you want to continue?'
+        );
+        
+        if (!confirmApproval) {
+            console.log('Approval cancelled by user for brand without logo');
+            return;
+        }
+    }
     
     try {
         // Find the brand item in the UI
@@ -336,7 +357,7 @@ async function handleApprove(brandId) {
             throw error;
         }
         
-        console.log('Logo approved successfully:', data);
+        console.log('Brand approved successfully:', data);
         
         // Remove the item from the UI with a smooth animation
         brandItem.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
@@ -358,8 +379,9 @@ async function handleApprove(brandId) {
             }
         }, 300);
         
-        // Show success notification
-        showSuccessNotification('Logo approved successfully!');
+        // Show success notification with appropriate message
+        const successMessage = hasLogo ? 'Logo approved successfully!' : 'Brand approved successfully (no logo)!';
+        showSuccessNotification(successMessage);
         
     } catch (error) {
         console.error('Error in handleApprove:', error);
@@ -372,17 +394,12 @@ async function handleApprove(brandId) {
             
             approveBtn.disabled = false;
             rejectBtn.disabled = false;
-            approveBtn.innerHTML = `
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                </svg>
-                Approve
-            `;
+            approveBtn.innerHTML = originalApproveText;
         }
         
         // Show error message
-        const errorMsg = error.message || 'Failed to approve logo. Please try again.';
-        showError(`Error approving logo: ${errorMsg}`);
+        const errorMsg = error.message || 'Failed to approve brand. Please try again.';
+        showError(`Error approving brand: ${errorMsg}`);
     }
 }
 
