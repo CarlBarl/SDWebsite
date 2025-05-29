@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Logo Moderation Queue - Student Discount</title>
+    <link rel="stylesheet" href="styles/admin_moderation.css">
+</head>
+<body>
+    <div class="container">
+        <header class="admin-header">
+            <div class="header-content">
+                <h1>Admin - Logo Moderation Queue</h1>
+                <div class="admin-actions">
+                    <span id="adminEmail" class="admin-email"></span>
+                    <button id="logoutBtn" class="logout-btn">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Loading state -->
+        <div id="loadingState" class="loading-state">
+            <div class="loading-spinner">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="31.416" stroke-dashoffset="31.416">
+                        <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
+                        <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
+                    </circle>
+                </svg>
+            </div>
+            <p>Verifying admin access...</p>
+        </div>
+
+        <!-- Access denied state -->
+        <div id="accessDenied" class="access-denied" style="display: none;">
+            <div class="denied-icon">🚫</div>
+            <h2>Access Denied</h2>
+            <p>You do not have admin privileges to access this page.</p>
+            <button id="backToLoginBtn" class="back-btn">Back to Login</button>
+        </div>
+
+        <!-- Main content (hidden until auth is verified) -->
+        <main id="mainContent" class="main-content" style="display: none;">
+            <div class="moderation-stats">
+                <div class="stat-card">
+                    <h3>Pending Logos</h3>
+                    <span id="pendingCount" class="stat-number">0</span>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Processed</h3>
+                    <span id="processedCount" class="stat-number">0</span>
+                </div>
+            </div>
+
+            <div class="moderation-queue">
+                <div class="queue-header">
+                    <h2>Pending Logo Submissions</h2>
+                    <button id="refreshBtn" class="refresh-btn">
+                        <svg viewBox="0 0 24 24" width="16" height="16">
+                            <path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+                
+                <div id="logoQueue" class="logo-queue">
+                    <!-- Pending logos will be loaded here -->
+                </div>
+
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <div class="empty-icon">✅</div>
+                    <h3>All caught up!</h3>
+                    <p>No pending logo submissions at the moment.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Error message -->
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="scripts/admin_moderation.js"></script>
+</body>
+</html>
