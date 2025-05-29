@@ -43,6 +43,10 @@ function closeWindow() {
     }, 1000);
 }
 
+function redirectToAdminLogin() {
+    window.location.href = '/admin-login.html';
+}
+
 // Auto-close after 30 seconds if user doesn't interact
 setTimeout(() => {
     closeWindow();
