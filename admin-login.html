@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Student Discount</title>
+    <link rel="stylesheet" href="styles/admin_login.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="icon-container">
+                <svg class="admin-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L13.09 4.26L16 2L14.74 5.13L18 4L15.87 7.26L19 6L16.74 9.13L20 8L17.87 11.26L21 10L18.74 13.13L22 12L19.87 15.26L23 14L20.74 17.13L24 16L21.87 19.26L25 18L22.74 21.13L26 20L23.87 23.26L27 22L24.74 25.13L28 24L25.87 27.26L29 26L26.74 29.13L30 28L27.87 31.26L31 30L28.74 33.13L32 32L29.87 35.26L33 34L30.74 37.13L34 36L31.87 39.26L35 38L32.74 41.13L36 40L33.87 43.26L37 42L34.74 45.13L38 44L35.87 47.26L39 46L36.74 49.13L40 48L37.87 51.26L41 50L38.74 53.13L42 52L39.87 55.26L43 54L40.74 57.13L44 56L41.87 59.26L45 58L42.74 61.13L46 60L43.87 63.26L47 62L44.74 65.13L48 64L45.87 67.26L49 66L46.74 69.13L50 68L47.87 71.26L51 70L48.74 73.13L52 72L49.87 75.26L53 74L50.74 77.13L54 76L51.87 79.26L55 78L52.74 81.13L56 80L53.87 83.26L57 82L54.74 85.13L58 84L55.87 87.26L59 86L56.74 89.13L60 88L57.87 91.26L61 90L58.74 93.13L62 92L59.87 95.26L63 94L60.74 97.13L64 96L61.87 99.26L65 98L62.74 101.13L66 100L63.87 103.26L67 102L64.74 105.13L68 104L65.87 107.26L69 106L66.74 109.13L70 108L67.87 111.26L71 110L68.74 113.13L72 112L69.87 115.26L73 114L70.74 117.13L74 116L71.87 119.26L75 118L72.74 121.13L76 120L73.87 123.26L77 122L74.74 125.13L78 124L75.87 127.26L79 126L76.74 129.13L80 128L77.87 131.26L81 130L78.74 133.13L82 132L79.87 135.26L83 134L80.74 137.13L84 136L81.87 139.26L85 138L82.74 141.13L86 140L83.87 143.26L87 142L84.74 145.13L88 144L85.87 147.26L89 146L86.74 149.13L90 148L87.87 151.26L91 150L88.74 153.13L92 152L89.87 155.26L93 154L90.74 157.13L94 156L91.87 159.26L95 158L92.74 161.13L96 160L93.87 163.26L97 162L94.74 165.13L98 164L95.87 167.26L99 166L96.74 169.13L100 168L97.87 171.26" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 14C8.69 14 6 16.69 6 20H18C18 16.69 15.31 14 12 14Z" stroke="currentColor" stroke-width="2"/>
+                </svg>
+            </div>
+            <h1>Admin Login</h1>
+            <form id="adminLoginForm" class="login-form">
+                <div class="form-group">
+                    <label for="email">Email address</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="login-btn" id="loginBtn">
+                    <span class="btn-text">Login</span>
+                    <span class="loading-spinner" style="display: none;">
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="31.416" stroke-dashoffset="31.416">
+                                <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
+                                <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
+                            </circle>
+                        </svg>
+                    </span>
+                </button>
+            </form>
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="scripts/admin_login.js"></script>
+</body>
+</html>
