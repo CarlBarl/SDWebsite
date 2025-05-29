@@ -159,7 +159,8 @@ async function loadPendingLogos() {
                 description,
                 website_url,
                 pending_logo_url,
-                user_id,
+                created_by_user_id,
+                logo_uploaded_by,
                 created_at,
                 logo_moderation_status
             `)
@@ -242,10 +243,17 @@ function createBrandModerationItem(brand) {
                     <span class="brand-id">${brand.id}</span>
                 </div>
                 
-                ${brand.user_id ? `
+                ${brand.created_by_user_id ? `
                     <div class="detail-item">
-                        <span class="detail-label">Submitted by:</span>
-                        <span class="user-id">${brand.user_id}</span>
+                        <span class="detail-label">Created by:</span>
+                        <span class="user-id">${brand.created_by_user_id}</span>
+                    </div>
+                ` : ''}
+                
+                ${brand.logo_uploaded_by ? `
+                    <div class="detail-item">
+                        <span class="detail-label">Logo uploaded by:</span>
+                        <span class="user-id">${brand.logo_uploaded_by}</span>
                     </div>
                 ` : ''}
             </div>
