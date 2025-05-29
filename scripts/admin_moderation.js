@@ -150,7 +150,7 @@ async function loadPendingLogos() {
         
         console.log('Loading pending brand logos...');
         
-        // Fetch brands with pending logo moderation status
+        // First, try a simple query to fetch all brands
         const { data: brands, error } = await supabase
             .from('brands')
             .select(`
@@ -159,28 +159,70 @@ async function loadPendingLogos() {
                 description,
                 website_url,
                 pending_logo_url,
+                logo_url,
                 created_by_user_id,
                 logo_uploaded_by,
                 created_at,
                 logo_moderation_status
             `)
-            .eq('logo_moderation_status', 'pending')
             .order('created_at', { ascending: false });
         
         if (error) {
-            console.error('Error fetching pending brands:', error);
+            console.error('Error fetching brands:', error);
+            console.error('Error details:', {
+                message: error.message,
+                details: error.details,
+                hint: error.hint,
+                code: error.code
+            });
             throw error;
         }
         
-        console.log('Fetched pending brands:', brands);
-        pendingBrands = brands || [];
+        console.log('Raw fetched brands:', brands);
+        console.log('Total brands fetched:', brands?.length || 0);
+        
+        // Filter brands that need moderation on the client side
+        const filteredBrands = brands?.filter(brand => {
+            const status = brand.logo_moderation_status;
+            
+            // Log each brand's status for debugging
+            console.log(`Brand ${brand.id} (${brand.name}): status = ${status}`);
+            
+            // Include brands that are:
+            // 1. pending
+            // 2. null/undefined (never been moderated)
+            // 3. needs_review
+            const needsModeration = status === 'pending' || status === null || status === undefined || status === 'needs_review';
+            
+            if (needsModeration) {
+                console.log(`Brand ${brand.id} needs moderation`);
+            }
+            
+            return needsModeration;
+        }) || [];
+        
+        pendingBrands = filteredBrands;
+        
+        console.log('Filtered pending brands:', pendingBrands);
+        console.log('Number of pending brands:', pendingBrands.length);
         
         // Render the pending brands
         renderPendingBrands();
         
     } catch (error) {
         console.error('Error loading pending logos:', error);
-        showError('Failed to load pending logos. Please try again.');
+        console.error('Full error object:', JSON.stringify(error, null, 2));
+        
+        // Show more specific error message
+        let errorMsg = 'Failed to load pending logos. Please try again.';
+        if (error.message) {
+            errorMsg += ` Error: ${error.message}`;
+        }
+        if (error.code) {
+            errorMsg += ` (Code: ${error.code})`;
+        }
+        
+        showError(errorMsg);
         logoQueue.innerHTML = '';
         emptyState.style.display = 'block';
     } finally {
@@ -275,30 +317,290 @@ function createBrandModerationItem(brand) {
                             <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
                         </svg>
                         <span class="no-logo-text">No logo uploaded</span>
-                        <span class="no-logo-hint">Brand can still be approved</span>
+                        <span class="no-logo-hint">Admin can upload a logo below</span>
                     </div>
                 `}
+            </div>
+            
+            <!-- Admin logo upload section (initially hidden) -->
+            <div class="admin-upload-section" id="uploadSection_${brand.id}" style="display: none;">
+                <input type="file" 
+                       id="adminLogoInput_${brand.id}" 
+                       class="admin-logo-input" 
+                       accept="image/*" 
+                       onchange="handleFileSelected('${brand.id}', this)"
+                       style="display: none;">
+                
+                <div class="upload-controls">
+                    <button class="select-file-btn" onclick="document.getElementById('adminLogoInput_${brand.id}').click()">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                        </svg>
+                        Choose File
+                    </button>
+                    <span class="file-name" id="fileName_${brand.id}">No file selected</span>
+                </div>
+                
+                <div class="upload-preview" id="preview_${brand.id}" style="display: none;">
+                    <img class="preview-image" alt="Logo preview">
+                    <div class="preview-actions">
+                        <button class="cancel-upload-btn" onclick="cancelUpload('${brand.id}')">Cancel</button>
+                        <button class="confirm-upload-btn" onclick="confirmUpload('${brand.id}')">Upload Logo</button>
+                    </div>
+                </div>
             </div>
         </div>
         
         <div class="moderation-actions">
-            <button class="approve-btn ${!hasLogo ? 'approve-no-logo' : ''}" onclick="handleApprove('${brand.id}')" title="${hasLogo ? 'Approve this brand logo' : 'Approve this brand (no logo will be set)'}">
+            <button class="approve-btn ${!hasLogo ? 'approve-no-logo' : ''}" 
+                    onclick="handleApprove('${brand.id}')" 
+                    title="${hasLogo ? 'Approve this brand logo' : 'Approve this brand (no logo will be set)'}">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                 </svg>
                 ${hasLogo ? 'Approve' : 'Approve (No Logo)'}
             </button>
             
-            <button class="reject-btn" onclick="handleReject('${brand.id}')" title="Reject this brand submission">
+            <button class="upload-logo-btn" onclick="toggleUploadSection('${brand.id}')" title="Upload or replace logo for this brand">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
                 </svg>
-                Reject
+                ${hasLogo ? 'Replace Logo' : 'Upload Logo'}
             </button>
         </div>
     `;
     
     return item;
+}
+
+// Function to toggle the upload section visibility
+function toggleUploadSection(brandId) {
+    const uploadSection = document.getElementById(`uploadSection_${brandId}`);
+    const uploadBtn = document.querySelector(`[data-brand-id="${brandId}"] .upload-logo-btn`);
+    
+    if (uploadSection.style.display === 'none' || uploadSection.style.display === '') {
+        // Show upload section
+        uploadSection.style.display = 'block';
+        uploadBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+            Cancel Upload
+        `;
+        uploadBtn.title = 'Cancel logo upload';
+    } else {
+        // Hide upload section
+        hideUploadSection(brandId);
+    }
+}
+
+// Function to hide upload section and reset state
+function hideUploadSection(brandId) {
+    const uploadSection = document.getElementById(`uploadSection_${brandId}`);
+    const uploadBtn = document.querySelector(`[data-brand-id="${brandId}"] .upload-logo-btn`);
+    const fileInput = document.getElementById(`adminLogoInput_${brandId}`);
+    const fileName = document.getElementById(`fileName_${brandId}`);
+    const preview = document.getElementById(`preview_${brandId}`);
+    
+    // Find brand data to determine button text
+    const brandData = pendingBrands.find(brand => brand.id === brandId);
+    const hasLogo = brandData && brandData.pending_logo_url && brandData.pending_logo_url.trim() !== '';
+    
+    uploadSection.style.display = 'none';
+    uploadBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+        </svg>
+        ${hasLogo ? 'Replace Logo' : 'Upload Logo'}
+    `;
+    uploadBtn.title = hasLogo ? 'Upload or replace logo for this brand' : 'Upload logo for this brand';
+    
+    // Reset file input and preview
+    fileInput.value = '';
+    fileName.textContent = 'No file selected';
+    preview.style.display = 'none';
+}
+
+// Function to handle file selection
+function handleFileSelected(brandId, inputElement) {
+    const file = inputElement.files[0];
+    const fileName = document.getElementById(`fileName_${brandId}`);
+    const preview = document.getElementById(`preview_${brandId}`);
+    const previewImage = preview.querySelector('.preview-image');
+    
+    if (!file) {
+        fileName.textContent = 'No file selected';
+        preview.style.display = 'none';
+        return;
+    }
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        showError('Please select a valid image file.');
+        inputElement.value = '';
+        fileName.textContent = 'No file selected';
+        preview.style.display = 'none';
+        return;
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        showError('Image size must be less than 5MB.');
+        inputElement.value = '';
+        fileName.textContent = 'No file selected';
+        preview.style.display = 'none';
+        return;
+    }
+    
+    // Update file name display
+    fileName.textContent = file.name;
+    
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        previewImage.src = e.target.result;
+        preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+    
+    console.log(`File selected for brand ${brandId}:`, file);
+}
+
+// Function to cancel upload
+function cancelUpload(brandId) {
+    hideUploadSection(brandId);
+}
+
+// Function to confirm upload (placeholder for now)
+function confirmUpload(brandId) {
+    const fileInput = document.getElementById(`adminLogoInput_${brandId}`);
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showError('No file selected.');
+        return;
+    }
+    
+    console.log(`Confirming upload for brand ${brandId}:`, file);
+    
+    // Call the placeholder function
+    handleAdminUploadLogo(brandId, file);
+}
+
+// Implement actual admin logo upload functionality
+async function handleAdminUploadLogo(brandId, fileObject) {
+    console.log('handleAdminUploadLogo called with:', {
+        brandId: brandId,
+        fileObject: fileObject,
+        fileName: fileObject.name,
+        fileSize: fileObject.size,
+        fileType: fileObject.type
+    });
+    
+    try {
+        // Show upload progress
+        const confirmBtn = document.querySelector(`[data-brand-id="${brandId}"] .confirm-upload-btn`);
+        const cancelBtn = document.querySelector(`[data-brand-id="${brandId}"] .cancel-upload-btn`);
+        const originalConfirmText = confirmBtn.innerHTML;
+        
+        confirmBtn.disabled = true;
+        cancelBtn.disabled = true;
+        confirmBtn.innerHTML = `
+            <svg class="processing-spinner" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="31.416" stroke-dashoffset="31.416">
+                    <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
+                    <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
+                </circle>
+            </svg>
+            Uploading...
+        `;
+
+        // Create FormData for multipart upload
+        const formData = new FormData();
+        formData.append('brand_id', brandId);
+        formData.append('logo_file', fileObject);
+
+        // Call the admin-upload-brand-logo Edge Function
+        const { data, error } = await supabase.functions.invoke('admin-upload-brand-logo', {
+            body: formData
+        });
+
+        if (error) {
+            console.error('Error uploading admin logo:', error);
+            throw error;
+        }
+
+        console.log('Logo upload successful:', data);
+
+        // Update the brand data in memory to keep it pending for approval
+        const brandIndex = pendingBrands.findIndex(brand => brand.id === brandId);
+        if (brandIndex !== -1) {
+            pendingBrands[brandIndex].pending_logo_url = data.newLogoUrl;
+            pendingBrands[brandIndex].logo_url = data.newLogoUrl;
+            pendingBrands[brandIndex].admin_uploaded_logo = true;
+            pendingBrands[brandIndex].logo_moderation_status = 'pending'; // Keep as pending
+        }
+
+        // Update the UI to reflect the uploaded logo
+        const logoContainer = document.querySelector(`[data-brand-id="${brandId}"] .logo-container`);
+        logoContainer.classList.remove('no-logo');
+        logoContainer.innerHTML = `
+            <img src="${data.newLogoUrl}" 
+                 alt="Admin uploaded logo for ${data.brandName}" 
+                 class="pending-logo"
+                 onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgNzVWMTI1TTc1IDEwMEgxMjUiIHN0cm9rZT0iIzlDQTNBRiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPHN2Zz4K'; this.classList.add('error-placeholder');">
+            <div class="admin-uploaded-badge">Admin Uploaded</div>
+        `;
+
+        // Update the approve button to show it's ready for approval
+        const approveBtn = document.querySelector(`[data-brand-id="${brandId}"] .approve-btn`);
+        approveBtn.classList.remove('approve-no-logo');
+        approveBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+            Approve Admin Logo
+        `;
+        approveBtn.title = 'Approve this brand with admin-uploaded logo';
+
+        // Update the upload button
+        const uploadBtn = document.querySelector(`[data-brand-id="${brandId}"] .upload-logo-btn`);
+        uploadBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+            </svg>
+            Replace Logo
+        `;
+        uploadBtn.title = 'Replace the admin-uploaded logo';
+
+        // Add visual indicator that this is now admin-managed
+        const brandItem = document.querySelector(`[data-brand-id="${brandId}"]`);
+        brandItem.classList.add('admin-managed');
+
+        // Hide the upload section
+        hideUploadSection(brandId);
+
+        showSuccessNotification(`Logo uploaded successfully for ${data.brandName}! Ready for approval.`);
+
+        // Don't update statistics yet since it's still pending
+
+    } catch (error) {
+        console.error('Error uploading admin logo:', error);
+        
+        // Re-enable buttons and restore original text
+        const confirmBtn = document.querySelector(`[data-brand-id="${brandId}"] .confirm-upload-btn`);
+        const cancelBtn = document.querySelector(`[data-brand-id="${brandId}"] .cancel-upload-btn`);
+        
+        if (confirmBtn && cancelBtn) {
+            confirmBtn.disabled = false;
+            cancelBtn.disabled = false;
+            confirmBtn.innerHTML = 'Upload Logo';
+        }
+        
+        // Show error message
+        const errorMsg = error.message || 'Failed to upload logo. Please try again.';
+        showError(`Error uploading logo: ${errorMsg}`);
+    }
 }
 
 // Replace the placeholder handleApprove function
@@ -332,7 +634,7 @@ async function handleApprove(brandId) {
         
         // Disable buttons and show processing state
         const approveBtn = brandItem.querySelector('.approve-btn');
-        const rejectBtn = brandItem.querySelector('.reject-btn');
+        const rejectBtn = brandItem.querySelector('.upload-logo-btn');
         const originalApproveText = approveBtn.innerHTML;
         
         approveBtn.disabled = true;
@@ -390,7 +692,7 @@ async function handleApprove(brandId) {
         const brandItem = document.querySelector(`[data-brand-id="${brandId}"]`);
         if (brandItem) {
             const approveBtn = brandItem.querySelector('.approve-btn');
-            const rejectBtn = brandItem.querySelector('.reject-btn');
+            const rejectBtn = brandItem.querySelector('.upload-logo-btn');
             
             approveBtn.disabled = false;
             rejectBtn.disabled = false;
@@ -403,141 +705,40 @@ async function handleApprove(brandId) {
     }
 }
 
-// Replace the placeholder handleReject function
-async function handleReject(brandId) {
-    console.log('Rejecting brand:', brandId);
-    
-    // Prompt for rejection reason
-    const rejectionReason = prompt('Please enter a reason for rejection:');
-    
-    // Check if user cancelled or provided empty reason
-    if (!rejectionReason || rejectionReason.trim() === '') {
-        console.log('Rejection cancelled - no reason provided');
-        return;
-    }
-    
-    try {
-        // Find the brand item in the UI
-        const brandItem = document.querySelector(`[data-brand-id="${brandId}"]`);
-        if (!brandItem) {
-            console.error('Brand item not found in UI');
-            return;
-        }
-        
-        // Disable buttons and show processing state
-        const approveBtn = brandItem.querySelector('.approve-btn');
-        const rejectBtn = brandItem.querySelector('.reject-btn');
-        const originalRejectText = rejectBtn.innerHTML;
-        
-        approveBtn.disabled = true;
-        rejectBtn.disabled = true;
-        rejectBtn.innerHTML = `
-            <svg class="processing-spinner" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="31.416" stroke-dashoffset="31.416">
-                    <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
-                    <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
-                </circle>
-            </svg>
-            Processing...
-        `;
-        
-        // Call the reject-logo Edge Function
-        const { data, error } = await supabase.functions.invoke('reject-logo', {
-            body: { 
-                brand_id: brandId, 
-                rejection_reason: rejectionReason.trim() 
-            }
-        });
-        
-        if (error) {
-            console.error('Error rejecting logo:', error);
-            throw error;
-        }
-        
-        console.log('Logo rejected successfully:', data);
-        
-        // Remove the item from the UI with a smooth animation
-        brandItem.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
-        brandItem.style.opacity = '0';
-        brandItem.style.transform = 'translateX(-20px)';
-        
-        setTimeout(() => {
-            brandItem.remove();
-            
-            // Update the pending brands array
-            pendingBrands = pendingBrands.filter(brand => brand.id !== brandId);
-            
-            // Update counts
-            updateStatsCounts();
-            
-            // Check if queue is now empty
-            if (pendingBrands.length === 0) {
-                emptyState.style.display = 'block';
-            }
-        }, 300);
-        
-        // Show success notification
-        showSuccessNotification('Logo rejected successfully!');
-        
-    } catch (error) {
-        console.error('Error in handleReject:', error);
-        
-        // Re-enable buttons and restore original text
-        const brandItem = document.querySelector(`[data-brand-id="${brandId}"]`);
-        if (brandItem) {
-            const approveBtn = brandItem.querySelector('.approve-btn');
-            const rejectBtn = brandItem.querySelector('.reject-btn');
-            
-            approveBtn.disabled = false;
-            rejectBtn.disabled = false;
-            rejectBtn.innerHTML = `
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                </svg>
-                Reject
-            `;
-        }
-        
-        // Show error message
-        const errorMsg = error.message || 'Failed to reject logo. Please try again.';
-        showError(`Error rejecting logo: ${errorMsg}`);
-    }
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
 async function loadStatistics() {
     try {
         console.log('Loading moderation statistics...');
         
-        // Get count of pending brands
-        const { count: pendingCount, error: pendingError } = await supabase
-            .from('brands')
-            .select('*', { count: 'exact', head: true })
-            .eq('logo_moderation_status', 'pending');
+        // Simplify the statistics queries as well
         
-        if (pendingError) {
-            console.error('Error getting pending count:', pendingError);
-        } else {
-            document.getElementById('pendingCount').textContent = pendingCount || 0;
+        // Get all brands first
+        const { data: allBrands, error: allBrandsError } = await supabase
+            .from('brands')
+            .select('logo_moderation_status');
+        
+        if (allBrandsError) {
+            console.error('Error getting all brands for stats:', allBrandsError);
+            return;
         }
         
-        // Get count of processed brands (approved + rejected)
-        const { count: processedCount, error: processedError } = await supabase
-            .from('brands')
-            .select('*', { count: 'exact', head: true })
-            .in('logo_moderation_status', ['approved', 'rejected']);
+        console.log('All brands for stats:', allBrands);
         
-        if (processedError) {
-            console.error('Error getting processed count:', processedError);
-        } else {
-            document.getElementById('processedCount').textContent = processedCount || 0;
-        }
+        // Count pending brands
+        const pendingCount = allBrands?.filter(brand => {
+            const status = brand.logo_moderation_status;
+            return status === 'pending' || status === null || status === undefined || status === 'needs_review';
+        }).length || 0;
+        
+        // Count processed brands
+        const processedCount = allBrands?.filter(brand => {
+            const status = brand.logo_moderation_status;
+            return status === 'approved' || status === 'rejected' || status === 'admin_set';
+        }).length || 0;
+        
+        console.log('Statistics:', { pendingCount, processedCount });
+        
+        document.getElementById('pendingCount').textContent = pendingCount;
+        document.getElementById('processedCount').textContent = processedCount;
         
     } catch (error) {
         console.error('Error loading statistics:', error);
@@ -648,3 +849,16 @@ document.addEventListener('visibilitychange', () => {
         loadPendingLogos();
     }
 });
+
+// Add missing escapeHtml function
+function escapeHtml(text) {
+    if (!text) return '';
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}

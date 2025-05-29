@@ -338,7 +338,6 @@ body {
     opacity: 0.5;
 }
 
-/* Enhanced no-logo placeholder styles */
 .no-logo-placeholder {
     display: flex;
     flex-direction: column;
@@ -427,18 +426,6 @@ body {
     transform: none;
 }
 
-/* Special styling for approve button when no logo */
-.approve-btn.approve-no-logo {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    border-color: #047857;
-}
-
-.approve-btn.approve-no-logo:hover {
-    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-}
-
 /* Processing state styles */
 .moderation-item.processing {
     transition: opacity 0.2s ease-in-out;
@@ -481,6 +468,148 @@ body {
     }
 }
 
+/* Admin upload section styles */
+.admin-upload-section {
+    margin-top: 16px;
+    padding: 16px;
+    background: #f8fafc;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.upload-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.select-file-btn {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.select-file-btn:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.file-name {
+    font-size: 14px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.upload-preview {
+    text-align: center;
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.preview-image {
+    max-width: 150px;
+    max-height: 150px;
+    border-radius: 6px;
+    border: 2px solid #e5e7eb;
+    background: white;
+    object-fit: contain;
+    margin-bottom: 12px;
+}
+
+.preview-actions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.cancel-upload-btn {
+    background: #6b7280;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cancel-upload-btn:hover {
+    background: #4b5563;
+    transform: translateY(-1px);
+}
+
+.confirm-upload-btn {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.confirm-upload-btn:hover {
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+/* Upload logo button styling */
+.upload-logo-btn {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.upload-logo-btn:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.upload-logo-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .container {
@@ -505,6 +634,22 @@ body {
     
     .moderation-stats {
         grid-template-columns: 1fr;
+    }
+    
+    .upload-controls {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .preview-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .cancel-upload-btn,
+    .confirm-upload-btn {
+        width: 100%;
     }
 }
 
