@@ -402,6 +402,48 @@ body {
     transform: none;
 }
 
+/* Processing state styles */
+.moderation-item.processing {
+    transition: opacity 0.2s ease-in-out;
+    cursor: not-allowed;
+}
+
+.moderation-item.processing .moderation-actions button {
+    cursor: not-allowed;
+}
+
+.processing-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Success notification animations */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .container {

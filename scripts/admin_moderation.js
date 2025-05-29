@@ -297,15 +297,194 @@ function createBrandModerationItem(brand) {
     return item;
 }
 
-// Placeholder functions for approve/reject actions (to be implemented in later phases)
-function handleApprove(brandId) {
-    console.log('Approve brand:', brandId);
-    showError('Approve functionality will be implemented in the next phase.');
+// Replace the placeholder handleApprove function
+async function handleApprove(brandId) {
+    console.log('Approving brand:', brandId);
+    
+    try {
+        // Find the brand item in the UI
+        const brandItem = document.querySelector(`[data-brand-id="${brandId}"]`);
+        if (!brandItem) {
+            console.error('Brand item not found in UI');
+            return;
+        }
+        
+        // Disable buttons and show processing state
+        const approveBtn = brandItem.querySelector('.approve-btn');
+        const rejectBtn = brandItem.querySelector('.reject-btn');
+        const originalApproveText = approveBtn.innerHTML;
+        
+        approveBtn.disabled = true;
+        rejectBtn.disabled = true;
+        approveBtn.innerHTML = `
+            <svg class="processing-spinner" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="31.416" stroke-dashoffset="31.416">
+                    <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
+                    <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
+                </circle>
+            </svg>
+            Processing...
+        `;
+        
+        // Call the approve-logo Edge Function
+        const { data, error } = await supabase.functions.invoke('approve-logo', {
+            body: { brand_id: brandId }
+        });
+        
+        if (error) {
+            console.error('Error approving logo:', error);
+            throw error;
+        }
+        
+        console.log('Logo approved successfully:', data);
+        
+        // Remove the item from the UI with a smooth animation
+        brandItem.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+        brandItem.style.opacity = '0';
+        brandItem.style.transform = 'translateX(-20px)';
+        
+        setTimeout(() => {
+            brandItem.remove();
+            
+            // Update the pending brands array
+            pendingBrands = pendingBrands.filter(brand => brand.id !== brandId);
+            
+            // Update counts
+            updateStatsCounts();
+            
+            // Check if queue is now empty
+            if (pendingBrands.length === 0) {
+                emptyState.style.display = 'block';
+            }
+        }, 300);
+        
+        // Show success notification
+        showSuccessNotification('Logo approved successfully!');
+        
+    } catch (error) {
+        console.error('Error in handleApprove:', error);
+        
+        // Re-enable buttons and restore original text
+        const brandItem = document.querySelector(`[data-brand-id="${brandId}"]`);
+        if (brandItem) {
+            const approveBtn = brandItem.querySelector('.approve-btn');
+            const rejectBtn = brandItem.querySelector('.reject-btn');
+            
+            approveBtn.disabled = false;
+            rejectBtn.disabled = false;
+            approveBtn.innerHTML = `
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                Approve
+            `;
+        }
+        
+        // Show error message
+        const errorMsg = error.message || 'Failed to approve logo. Please try again.';
+        showError(`Error approving logo: ${errorMsg}`);
+    }
 }
 
-function handleReject(brandId) {
-    console.log('Reject brand:', brandId);
-    showError('Reject functionality will be implemented in the next phase.');
+// Replace the placeholder handleReject function
+async function handleReject(brandId) {
+    console.log('Rejecting brand:', brandId);
+    
+    // Prompt for rejection reason
+    const rejectionReason = prompt('Please enter a reason for rejection:');
+    
+    // Check if user cancelled or provided empty reason
+    if (!rejectionReason || rejectionReason.trim() === '') {
+        console.log('Rejection cancelled - no reason provided');
+        return;
+    }
+    
+    try {
+        // Find the brand item in the UI
+        const brandItem = document.querySelector(`[data-brand-id="${brandId}"]`);
+        if (!brandItem) {
+            console.error('Brand item not found in UI');
+            return;
+        }
+        
+        // Disable buttons and show processing state
+        const approveBtn = brandItem.querySelector('.approve-btn');
+        const rejectBtn = brandItem.querySelector('.reject-btn');
+        const originalRejectText = rejectBtn.innerHTML;
+        
+        approveBtn.disabled = true;
+        rejectBtn.disabled = true;
+        rejectBtn.innerHTML = `
+            <svg class="processing-spinner" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="31.416" stroke-dashoffset="31.416">
+                    <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
+                    <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
+                </circle>
+            </svg>
+            Processing...
+        `;
+        
+        // Call the reject-logo Edge Function
+        const { data, error } = await supabase.functions.invoke('reject-logo', {
+            body: { 
+                brand_id: brandId, 
+                rejection_reason: rejectionReason.trim() 
+            }
+        });
+        
+        if (error) {
+            console.error('Error rejecting logo:', error);
+            throw error;
+        }
+        
+        console.log('Logo rejected successfully:', data);
+        
+        // Remove the item from the UI with a smooth animation
+        brandItem.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+        brandItem.style.opacity = '0';
+        brandItem.style.transform = 'translateX(-20px)';
+        
+        setTimeout(() => {
+            brandItem.remove();
+            
+            // Update the pending brands array
+            pendingBrands = pendingBrands.filter(brand => brand.id !== brandId);
+            
+            // Update counts
+            updateStatsCounts();
+            
+            // Check if queue is now empty
+            if (pendingBrands.length === 0) {
+                emptyState.style.display = 'block';
+            }
+        }, 300);
+        
+        // Show success notification
+        showSuccessNotification('Logo rejected successfully!');
+        
+    } catch (error) {
+        console.error('Error in handleReject:', error);
+        
+        // Re-enable buttons and restore original text
+        const brandItem = document.querySelector(`[data-brand-id="${brandId}"]`);
+        if (brandItem) {
+            const approveBtn = brandItem.querySelector('.approve-btn');
+            const rejectBtn = brandItem.querySelector('.reject-btn');
+            
+            approveBtn.disabled = false;
+            rejectBtn.disabled = false;
+            rejectBtn.innerHTML = `
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+                Reject
+            `;
+        }
+        
+        // Show error message
+        const errorMsg = error.message || 'Failed to reject logo. Please try again.';
+        showError(`Error rejecting logo: ${errorMsg}`);
+    }
 }
 
 function escapeHtml(text) {
@@ -381,6 +560,58 @@ function showError(message) {
     setTimeout(() => {
         errorMessage.style.display = 'none';
     }, 5000);
+}
+
+// Add helper functions for UI feedback
+function updateStatsCounts() {
+    // Update pending count
+    document.getElementById('pendingCount').textContent = pendingBrands.length;
+    
+    // Increment processed count
+    const processedElement = document.getElementById('processedCount');
+    const currentProcessed = parseInt(processedElement.textContent) || 0;
+    processedElement.textContent = currentProcessed + 1;
+}
+
+function showSuccessNotification(message) {
+    // Create and show a temporary success notification
+    const notification = document.createElement('div');
+    notification.className = 'success-notification';
+    notification.innerHTML = `
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>
+        ${message}
+    `;
+    
+    // Add styles for the notification
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #059669;
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        z-index: 1000;
+        animation: slideInRight 0.3s ease-out;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease-in';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
 }
 
 // Handle auth state changes
