@@ -125,6 +125,12 @@ async function verifyAdminRole() {
         if (sessionError || !session) {
             throw new Error('No valid session found');
         }
+
+        if (!session.access_token) {
+            throw new Error('No access token available');
+        }
+
+        console.log('Making admin verification request for user:', currentUser.email);
         
         // Call the is-user-admin Edge Function with proper JWT authorization
         const response = await fetch(`${supabaseUrl}/functions/v1/is-user-admin`, {
@@ -136,11 +142,16 @@ async function verifyAdminRole() {
             }
         });
         
+        console.log('Admin verification response status:', response.status);
+        
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('HTTP error response:', errorText);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const result = await response.json();
+        console.log('Admin verification result:', result);
         
         if (result.error) {
             throw new Error(result.error);
@@ -153,7 +164,7 @@ async function verifyAdminRole() {
             
             // Redirect to admin moderation page after a brief delay
             setTimeout(() => {
-                window.location.href = '/admin-moderation.html';
+                window.location.href = 'admin-moderation.html';
             }, 1500);
         } else {
             // User is not admin
@@ -170,8 +181,10 @@ async function verifyAdminRole() {
         
         // Handle specific error cases
         if (error.message.includes('HTTP error')) {
-            showError('Could not verify admin status. Please try again.');
-        } else if (error.message.includes('No valid session')) {
+            showError('Could not verify admin status. Server error occurred.');
+        } else if (error.message.includes('No valid session') || error.message.includes('No access token')) {
+            showError('Session expired. Please log in again.');
+        } else if (error.message.includes('Invalid or expired token')) {
             showError('Session expired. Please log in again.');
         } else {
             showError('Could not verify admin status. Please try again.');
