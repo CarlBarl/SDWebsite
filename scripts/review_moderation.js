@@ -325,7 +325,7 @@ async function handleRemoveReview(event) {
             <div class="success-notification">
                 <span class="success-icon">✅</span>
                 <h3>Review Removed Successfully</h3>
-                <p>The review has been deleted and the report has been approved.</p>
+                <p>The review has been deleted and the report has been processed.</p>
                 ${adminNotes ? `<p><strong>Admin Notes:</strong> ${escapeHtml(adminNotes)}</p>` : ''}
             </div>
         `;
@@ -468,7 +468,7 @@ async function handleDismissReport(event) {
             <div class="success-notification">
                 <span class="success-icon">✅</span>
                 <h3>Report Dismissed</h3>
-                <p>The report has been dismissed and marked as approved. The review remains visible.</p>
+                <p>The report has been dismissed as invalid. The review remains visible.</p>
                 ${adminNotes ? `<p><strong>Admin Notes:</strong> ${escapeHtml(adminNotes)}</p>` : ''}
             </div>
         `;
