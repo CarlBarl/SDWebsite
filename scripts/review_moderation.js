@@ -249,31 +249,63 @@ async function handleRemoveReview(event) {
         
         console.log('Session validated, calling edge function...');
         
-        // Prepare the request body
-        const requestBody = {
-            report_id: reportId,
-            review_id: reviewId,
+        // Prepare the request body - ensure it's a proper object
+        const requestPayload = {
+            report_id: String(reportId),
+            review_id: String(reviewId),
             admin_notes: adminNotes || null
         };
         
-        console.log('Request body:', requestBody);
+        console.log('Request payload:', requestPayload);
+        console.log('Payload JSON:', JSON.stringify(requestPayload));
         
-        // Call the edge function to remove the review
-        const { data, error } = await supabase.functions.invoke('remove-review', {
-            body: requestBody,
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json'
+        // Try different approaches to call the edge function
+        let response;
+        
+        try {
+            // Method 1: Use supabase.functions.invoke (preferred)
+            console.log('Attempting Method 1: supabase.functions.invoke');
+            const result = await supabase.functions.invoke('remove-review', {
+                body: requestPayload
+            });
+            
+            console.log('Method 1 result:', result);
+            response = result;
+            
+        } catch (invokeError) {
+            console.error('Method 1 failed:', invokeError);
+            
+            // Method 2: Direct fetch to the edge function URL
+            console.log('Attempting Method 2: direct fetch');
+            const functionUrl = `${supabaseUrl}/functions/v1/remove-review`;
+            
+            const fetchResponse = await fetch(functionUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                    'apikey': supabaseKey
+                },
+                body: JSON.stringify(requestPayload)
+            });
+            
+            if (!fetchResponse.ok) {
+                const errorText = await fetchResponse.text();
+                throw new Error(`HTTP ${fetchResponse.status}: ${errorText}`);
             }
-        });
-
-        console.log('Edge function response:', { data, error });
-
-        if (error) {
-            console.error('Edge function error:', error);
-            throw new Error(error.message || 'Failed to call remove-review function');
+            
+            const fetchData = await fetchResponse.json();
+            response = { data: fetchData, error: null };
         }
 
+        console.log('Final response:', response);
+
+        if (response.error) {
+            console.error('Edge function error:', response.error);
+            throw new Error(response.error.message || 'Failed to call remove-review function');
+        }
+
+        const data = response.data;
         if (!data) {
             console.error('No data returned from edge function');
             throw new Error('No response data from server');
