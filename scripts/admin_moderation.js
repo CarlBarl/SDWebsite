@@ -352,14 +352,16 @@ function createBrandModerationItem(brand) {
         </div>
         
         <div class="moderation-actions">
-            <button class="approve-btn ${!hasLogo ? 'approve-no-logo' : ''}" 
-                    onclick="handleApprove('${brand.id}')" 
-                    title="${hasLogo ? 'Approve this brand logo' : 'Approve this brand (no logo will be set)'}">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                </svg>
-                ${hasLogo ? 'Approve' : 'Approve (No Logo)'}
-            </button>
+            ${hasLogo ? `
+                <button class="approve-btn" 
+                        onclick="handleApprove('${brand.id}')" 
+                        title="Approve this brand logo">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                    Approve
+                </button>
+            ` : `<div class="no-approval-message">Cannot approve without logo</div>`}
             
             <button class="upload-logo-btn" onclick="toggleUploadSection('${brand.id}')" title="Upload or replace logo for this brand">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
