@@ -224,6 +224,11 @@ async function handleRemoveReview(event) {
     try {
         console.log('Starting review removal process...', { reportId, reviewId, adminNotes });
         
+        // Validate inputs
+        if (!reportId || !reviewId) {
+            throw new Error('Missing report ID or review ID');
+        }
+        
         // Disable the button and show processing state
         event.target.disabled = true;
         event.target.textContent = 'Removing...';
@@ -242,15 +247,20 @@ async function handleRemoveReview(event) {
             throw new Error('No active session found. Please log in again.');
         }
         
-        console.log('Calling remove-review edge function...');
+        console.log('Session validated, calling edge function...');
+        
+        // Prepare the request body
+        const requestBody = {
+            report_id: reportId,
+            review_id: reviewId,
+            admin_notes: adminNotes || null
+        };
+        
+        console.log('Request body:', requestBody);
         
         // Call the edge function to remove the review
         const { data, error } = await supabase.functions.invoke('remove-review', {
-            body: {
-                report_id: reportId,
-                review_id: reviewId,
-                admin_notes: adminNotes || null
-            },
+            body: requestBody,
             headers: {
                 'Authorization': `Bearer ${session.access_token}`,
                 'Content-Type': 'application/json'
@@ -264,9 +274,14 @@ async function handleRemoveReview(event) {
             throw new Error(error.message || 'Failed to call remove-review function');
         }
 
-        if (!data || !data.success) {
+        if (!data) {
+            console.error('No data returned from edge function');
+            throw new Error('No response data from server');
+        }
+
+        if (!data.success) {
             console.error('Edge function returned error:', data);
-            throw new Error(data?.error || 'Review removal failed');
+            throw new Error(data.error || data.message || 'Review removal failed');
         }
 
         console.log('Review removed successfully:', data);
