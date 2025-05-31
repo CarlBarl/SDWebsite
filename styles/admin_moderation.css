@@ -7,7 +7,7 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     line-height: 1.6;
-    color: #333;
+    color: #1e293b;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
 }
@@ -25,7 +25,7 @@ body {
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 30px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .header-content {
@@ -48,9 +48,31 @@ body {
     gap: 15px;
 }
 
+.nav-link {
+    color: #4f46e5;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    background: #4f46e5;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
 .admin-email {
-    color: #6b7280;
+    color: #64748b;
     font-size: 0.9rem;
+    background: #f8fafc;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
 }
 
 .logout-btn, .refresh-btn, .back-btn {
@@ -65,15 +87,16 @@ body {
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .refresh-btn {
-    background: #3b82f6;
+    background: #4f46e5;
 }
 
 .back-btn {
-    background: #6b7280;
+    background: #64748b;
 }
 
 .logout-btn:hover {
@@ -82,12 +105,12 @@ body {
 }
 
 .refresh-btn:hover {
-    background: #2563eb;
+    background: #4338ca;
     transform: translateY(-1px);
 }
 
 .back-btn:hover {
-    background: #4b5563;
+    background: #475569;
     transform: translateY(-1px);
 }
 
@@ -98,7 +121,7 @@ body {
     border-radius: 12px;
     padding: 60px 40px;
     text-align: center;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .loading-spinner {
@@ -106,6 +129,12 @@ body {
     height: 48px;
     margin: 0 auto 20px;
     color: #4f46e5;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
 
 .access-denied .denied-icon {
@@ -119,7 +148,7 @@ body {
 }
 
 .access-denied p {
-    color: #6b7280;
+    color: #64748b;
     margin-bottom: 30px;
 }
 
@@ -129,7 +158,7 @@ body {
     backdrop-filter: blur(10px);
     border-radius: 12px;
     padding: 30px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 /* Statistics */
@@ -146,6 +175,24 @@ body {
     border-radius: 12px;
     text-align: center;
     border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #4f46e5;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .stat-card h3 {
@@ -158,7 +205,7 @@ body {
 }
 
 .stat-number {
-    color: #1e293b;
+    color: #4f46e5;
     font-size: 2.5rem;
     font-weight: 700;
 }
@@ -173,11 +220,14 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e2e8f0;
 }
 
 .queue-header h2 {
     color: #1e293b;
     font-size: 1.5rem;
+    font-weight: 700;
 }
 
 .logo-queue {
@@ -189,7 +239,10 @@ body {
 .empty-state {
     text-align: center;
     padding: 60px 40px;
-    color: #6b7280;
+    color: #64748b;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 2px dashed #e2e8f0;
 }
 
 .empty-state .empty-icon {
@@ -204,8 +257,8 @@ body {
 
 /* Error message */
 .error-message {
-    background: #fef2f2;
-    border: 1px solid #fecaca;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
     color: #dc2626;
     padding: 15px;
     border-radius: 8px;
@@ -230,8 +283,9 @@ body {
 }
 
 .moderation-item:hover {
-    border-color: #cbd5e1;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #4f46e5;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
 }
 
 .brand-info {
@@ -321,6 +375,11 @@ body {
     border-radius: 8px;
     background: #f8fafc;
     overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.logo-container:hover {
+    border-color: #4f46e5;
 }
 
 .pending-logo {
@@ -334,49 +393,6 @@ body {
     transform: scale(1.05);
 }
 
-.pending-logo.error-placeholder {
-    opacity: 0.5;
-}
-
-.no-logo-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 120px;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-    border: 2px dashed #cbd5e1;
-    border-radius: 12px;
-    color: #64748b;
-    text-align: center;
-    padding: 20px;
-}
-
-.no-logo-placeholder svg {
-    color: #94a3b8;
-    margin-bottom: 8px;
-}
-
-.no-logo-text {
-    font-weight: 500;
-    font-size: 14px;
-    color: #475569;
-    margin-bottom: 4px;
-}
-
-.no-logo-hint {
-    font-size: 12px;
-    color: #64748b;
-    font-style: italic;
-}
-
-/* Logo container when no logo */
-.logo-container.no-logo {
-    border: 2px dashed #d1d5db;
-    border-radius: 12px;
-    background: #f9fafb;
-}
-
 /* Moderation actions */
 .moderation-actions {
     display: flex;
@@ -386,11 +402,11 @@ body {
 }
 
 .approve-btn, .reject-btn {
-    padding: 10px 16px;
+    padding: 12px 16px;
     border: none;
     border-radius: 8px;
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -398,6 +414,7 @@ body {
     gap: 6px;
     transition: all 0.2s ease;
     min-height: 40px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .approve-btn {
@@ -418,12 +435,6 @@ body {
 .reject-btn:hover {
     background: #dc2626;
     transform: translateY(-1px);
-}
-
-.approve-btn:disabled, .reject-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
 }
 
 /* Processing state styles */
