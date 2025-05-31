@@ -355,54 +355,125 @@ async function handleRemoveReview(event) {
     }
 }
 
-// Dismiss report (set status to 'rejected' and optionally add admin notes)
+// Dismiss report using the deployed edge function (keeps review, marks report as approved)
 async function handleDismissReport(event) {
     const reportId = event.target.dataset.reportId;
     const reportCard = document.querySelector(`.report-card[data-id="${reportId}"]`);
     const adminNotesElement = reportCard.querySelector('.admin-notes');
     const adminNotes = adminNotesElement?.value?.trim() || '';
 
-    if (!confirm('Are you sure you want to dismiss this report?')) {
+    if (!confirm('Are you sure you want to dismiss this report? The review will be kept and the report will be marked as resolved.')) {
         return;
     }
 
     try {
-        console.log('Dismissing report...', { reportId, adminNotes });
+        console.log('Starting report dismissal process...', { reportId, adminNotes });
+        
+        // Validate inputs
+        if (!reportId) {
+            throw new Error('Missing report ID');
+        }
         
         // Disable the button and show processing state
         event.target.disabled = true;
         event.target.textContent = 'Dismissing...';
         reportCard.classList.add('processing');
         
-        // Mark report as rejected and add admin notes
-        const { error } = await supabase
-            .from('review_reports')
-            .update({ 
-                status: 'rejected', 
-                admin_notes: adminNotes || null,
-                reviewed_by_admin_id: currentUser?.id || null,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', reportId);
-
-        if (error) {
-            console.error('Database error:', error);
-            throw error;
+        // Get the current user's session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+            console.error('Session error:', sessionError);
+            throw new Error(`Session error: ${sessionError.message}`);
+        }
+        
+        if (!session || !session.access_token) {
+            console.error('No active session found');
+            throw new Error('No active session found. Please log in again.');
+        }
+        
+        console.log('Session validated, calling edge function...');
+        
+        // Prepare the request body
+        const requestPayload = {
+            report_id: String(reportId),
+            admin_notes: adminNotes || null
+        };
+        
+        console.log('Request payload:', requestPayload);
+        
+        // Try different approaches to call the edge function
+        let response;
+        
+        try {
+            // Method 1: Use supabase.functions.invoke (preferred)
+            console.log('Attempting Method 1: supabase.functions.invoke');
+            const result = await supabase.functions.invoke('dismiss-report', {
+                body: requestPayload
+            });
+            
+            console.log('Method 1 result:', result);
+            response = result;
+            
+        } catch (invokeError) {
+            console.error('Method 1 failed:', invokeError);
+            
+            // Method 2: Direct fetch to the edge function URL
+            console.log('Attempting Method 2: direct fetch');
+            const functionUrl = `${supabaseUrl}/functions/v1/dismiss-report`;
+            
+            const fetchResponse = await fetch(functionUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                    'apikey': supabaseKey
+                },
+                body: JSON.stringify(requestPayload)
+            });
+            
+            if (!fetchResponse.ok) {
+                const errorText = await fetchResponse.text();
+                throw new Error(`HTTP ${fetchResponse.status}: ${errorText}`);
+            }
+            
+            const fetchData = await fetchResponse.json();
+            response = { data: fetchData, error: null };
         }
 
-        console.log('Report dismissed successfully');
-        showSuccess('Report dismissed successfully!');
+        console.log('Final response:', response);
+
+        if (response.error) {
+            console.error('Edge function error:', response.error);
+            throw new Error(response.error.message || 'Failed to call dismiss-report function');
+        }
+
+        const data = response.data;
+        if (!data) {
+            console.error('No data returned from edge function');
+            throw new Error('No response data from server');
+        }
+
+        if (!data.success) {
+            console.error('Edge function returned error:', data);
+            throw new Error(data.error || data.message || 'Report dismissal failed');
+        }
+
+        console.log('Report dismissed successfully:', data);
         
+        // Show success feedback
+        showSuccess('Report dismissed successfully!');
         reportCard.classList.add('processed');
         reportCard.innerHTML = `
             <div class="success-notification">
                 <span class="success-icon">✅</span>
                 <h3>Report Dismissed</h3>
-                <p>The report has been dismissed and marked as rejected.</p>
+                <p>The report has been dismissed and marked as approved. The review remains visible.</p>
                 ${adminNotes ? `<p><strong>Admin Notes:</strong> ${escapeHtml(adminNotes)}</p>` : ''}
             </div>
         `;
         
+        // Remove the card after a delay and refresh the list
         setTimeout(() => {
             reportCard.remove();
             updateStatistics();
