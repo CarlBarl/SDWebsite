@@ -325,7 +325,7 @@ async function handleRemoveReview(event) {
             <div class="success-notification">
                 <span class="success-icon">✅</span>
                 <h3>Review Removed Successfully</h3>
-                <p>The review has been deleted and the report has been processed.</p>
+                <p>The review has been deleted and the report has been resolved.</p>
                 ${adminNotes ? `<p><strong>Admin Notes:</strong> ${escapeHtml(adminNotes)}</p>` : ''}
             </div>
         `;
